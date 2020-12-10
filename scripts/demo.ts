@@ -50,7 +50,8 @@ const user = ethers.Wallet.createRandom().connect(provider)
     ]
 
   console.log("Submitting bundle");
-  const result = await provider.sendBundle(txs, 0);
+  const blk = await provider.getBlockNumber()
+  const result = await provider.sendBundle(txs, blk + 1);
   await result.wait();
   // wait a bit for the bundle to get processed
   await new Promise(r => setTimeout(r, 5000));
