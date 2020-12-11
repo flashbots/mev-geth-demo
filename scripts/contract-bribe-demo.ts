@@ -85,7 +85,7 @@ const user = ethers.Wallet.createRandom().connect(provider);
   await new Promise(r => setTimeout(r, 5000));
   const txHash = result.bundleTransactions[0].hash
   console.log("Bundle mined")
-  
+
 
   // get the inclusion block
   const retTx = await provider.getTransaction(txHash)
@@ -101,4 +101,7 @@ const user = ethers.Wallet.createRandom().connect(provider);
   const profit = balanceAfter.sub(balanceBefore).sub(ethers.utils.parseEther('2'))
   console.log("Profit (ETH)", ethers.utils.formatEther(profit))
   console.log("Profit equals bribe?", profit.eq(bribeTx.value!))
-})();
+})().catch((err) => {
+  console.error("error encountered in main loop", err)
+  process.exit(1)
+});
