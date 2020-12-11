@@ -72,4 +72,7 @@ const user = ethers.Wallet.createRandom().connect(provider)
   const profit = balanceAfter.sub(balanceBefore).sub(ethers.utils.parseEther('2'))
   console.log("Profit (ETH)", ethers.utils.formatEther(profit))
   console.log("Profit equals bribe?", profit.eq(bribe))
-})()
+})().catch((err) => {
+    console.error("error encountered in main loop", err)
+    process.exit(1)
+})
