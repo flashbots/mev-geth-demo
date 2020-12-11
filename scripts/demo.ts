@@ -1,5 +1,5 @@
 import { ethers } from 'ethers'
-import { FlashbotsBundleProvider } from "ethers-flashbots";
+import { FlashbotsBundleProvider } from "@flashbots/ethers-provider-bundle";
 
 const FAUCET = "0x133be114715e5fe528a1b8adf36792160601a2d63ab59d1fd454275b31328791"
 const DUMMY_RECEIVER = "0x1111111111111111111111111111111111111111"

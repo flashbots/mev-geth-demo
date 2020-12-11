@@ -338,6 +338,14 @@
     "@ethersproject/properties" "^5.0.3"
     "@ethersproject/strings" "^5.0.4"
 
+"@flashbots/ethers-provider-bundle@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@flashbots/ethers-provider-bundle/-/ethers-provider-bundle-0.0.1.tgz#3c6f00eb225cf30bcdfdb3b0b4062e1be2623c2b"
+  integrity sha512-2d9K/m78O0pOnmNTqQYik3YoAFr4AWlDjuhR9d+TPdVF/a2sCeVbCsxjhCuCruSZiuA8cc2SaPuuqjWQILzeYQ==
+  dependencies:
+    ts-node "^9.1.0"
+    typescript "^4.1.2"
+
 "@types/node@^14.14.10":
   version "14.14.10"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-14.14.10.tgz#5958a82e41863cfc71f2307b3748e3491ba03785"
@@ -423,13 +431,6 @@ elliptic@6.5.3:
     inherits "^2.0.1"
     minimalistic-assert "^1.0.0"
     minimalistic-crypto-utils "^1.0.0"
-
-"ethers-flashbots@git+ssh://git@github.com:flashbots/ethers-provider-flashbots-bundle":
-  version "1.0.0"
-  resolved "git+ssh://git@github.com:flashbots/ethers-provider-flashbots-bundle#82627b336e11cbe57c9a629f0f2882c6925aa278"
-  dependencies:
-    ts-node "^9.1.0"
-    typescript "^4.1.2"
 
 ethers@^5.0.23:
   version "5.0.23"

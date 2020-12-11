@@ -6,13 +6,12 @@
   "author": "Georgios Konstantopoulos <me@gakonst.com>",
   "license": "MIT",
   "dependencies": {
+    "@flashbots/ethers-provider-bundle": "^0.0.1",
     "@types/node": "^14.14.10",
     "ethers": "^5.0.23",
-    "ethers-flashbots": "git+ssh://git@github.com:flashbots/ethers-provider-flashbots-bundle",
     "solc": "^0.7.5"
   },
   "scripts": {
-    "postinstall": "cd node_modules/ethers-flashbots && tsc && cd -",
     "demo-simple": "ts-node scripts/demo.ts",
     "demo-contract": "ts-node scripts/contract-bribe-demo.ts"
   }
