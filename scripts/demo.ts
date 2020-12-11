@@ -53,16 +53,8 @@ const user = ethers.Wallet.createRandom().connect(provider)
   const blk = await provider.getBlockNumber()
   const result = await provider.sendBundle(txs, blk + 1);
   await result.wait();
-  // wait a bit for the bundle to get processed
-  await new Promise(r => setTimeout(r, 5000));
-  const txHash = result.bundleTransactions[1].hash
-  console.log("Bundle mined")
-
-  // get the inclusion block
-  const retTx = await provider.getTransaction(txHash)
-  const block = (await provider.getBlock(retTx.blockNumber!)).number
-  const receipt = await provider.getTransactionReceipt(retTx.hash)
-  console.log("Transaction mined", receipt)
+  const receipts = await result.receipts();
+  const block = receipts[0].blockNumber
 
   const balanceBefore = await provider.getBalance(faucet.address, block - 1)
   const balanceAfter = await provider.getBalance(faucet.address, block)
