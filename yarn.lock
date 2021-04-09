@@ -338,10 +338,9 @@
     "@ethersproject/properties" "^5.0.3"
     "@ethersproject/strings" "^5.0.4"
 
-"@flashbots/ethers-provider-bundle@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@flashbots/ethers-provider-bundle/-/ethers-provider-bundle-0.0.1.tgz#3c6f00eb225cf30bcdfdb3b0b4062e1be2623c2b"
-  integrity sha512-2d9K/m78O0pOnmNTqQYik3YoAFr4AWlDjuhR9d+TPdVF/a2sCeVbCsxjhCuCruSZiuA8cc2SaPuuqjWQILzeYQ==
+"@flashbots/ethers-provider-bundle@flashbots/ethers-provider-flashbots-bundle#jason/v0.2":
+  version "0.2.1"
+  resolved "https://codeload.github.com/flashbots/ethers-provider-flashbots-bundle/tar.gz/a699d5a0c42150acc5212594b12bcc7010106a37"
   dependencies:
     ts-node "^9.1.0"
     typescript "^4.1.2"
@@ -670,9 +669,9 @@ tmp@0.0.33:
     os-tmpdir "~1.0.2"
 
 ts-node@^9.1.0:
-  version "9.1.0"
-  resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-9.1.0.tgz#95eae4c6d0f94f2545884078e1eb1b14d2155639"
-  integrity sha512-0yqcL4sgruCvM+w64LiAfNJo6+lHfCYc5Ajj4yiLNkJ9oZ2HWaa+Kso7htYOOxVQ7+csAjdUjffOe9PIqC4pMg==
+  version "9.1.1"
+  resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-9.1.1.tgz#51a9a450a3e959401bda5f004a72d54b936d376d"
+  integrity sha512-hPlt7ZACERQGf03M253ytLY3dHbGNGrAq9qIHWUY9XHYl1z7wYngSr3OQ5xmui8o2AaxsONxIzjafLUiWBo1Fg==
   dependencies:
     arg "^4.1.0"
     create-require "^1.1.0"
@@ -682,9 +681,9 @@ ts-node@^9.1.0:
     yn "3.1.1"
 
 typescript@^4.1.2:
-  version "4.1.2"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.1.2.tgz#6369ef22516fe5e10304aae5a5c4862db55380e9"
-  integrity sha512-thGloWsGH3SOxv1SoY7QojKi0tc+8FnOmiarEGMbd/lar7QOEd3hvlx3Fp5y6FlDUGl9L+pd4n2e+oToGMmhRQ==
+  version "4.2.4"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.2.4.tgz#8610b59747de028fda898a8aef0e103f156d0961"
+  integrity sha512-V+evlYHZnQkaz8TRBuxTA92yZBPotr5H+WhQ7bD3hZUndx5tGOa1fuCgeSjxAzM1RiN5IzvadIXTVefuuwZCRg==
 
 wrappy@1:
   version "1.0.2"
