@@ -342,7 +342,7 @@
 
 "@flashbots/ethers-provider-bundle@flashbots/ethers-provider-flashbots-bundle#jason/v0.2":
   version "0.2.1"
-  resolved "https://codeload.github.com/flashbots/ethers-provider-flashbots-bundle/tar.gz/9d9e18d95c0a83557541cd26e6d5077f55b850c3"
+  resolved "https://codeload.github.com/flashbots/ethers-provider-flashbots-bundle/tar.gz/ecb082cd748d9682668544f7e443f967a6a5ecf5"
   dependencies:
     ts-node "^9.1.0"
     typescript "^4.1.2"
