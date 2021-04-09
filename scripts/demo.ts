@@ -13,7 +13,7 @@ const user = ethers.Wallet.createRandom().connect(provider)
 ;(async () => {
   // wrap it with the mev-geth provider
   const authSigner = Wallet.createRandom()
-  const flashbotsProvider = await FlashbotsBundleProvider.create(provider, authSigner)
+  const flashbotsProvider = await FlashbotsBundleProvider.create(provider, authSigner, 'http://localhost:8545', 5465)
 
   console.log('Faucet', faucet.address)
   // fund the user with some Ether from the coinbase address
