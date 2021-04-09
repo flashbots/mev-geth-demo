@@ -53,6 +53,10 @@ const user = ethers.Wallet.createRandom().connect(provider)
   console.log('Submitting bundle')
   const blk = await provider.getBlockNumber()
   const result = await flashbotsProvider.sendBundle(txs, blk + 5)
+  if ('error' in result) {
+    throw new Error(result.error.message)
+  }
+
   await result.wait()
   const receipts = await result.receipts()
   const block = receipts[0].blockNumber
