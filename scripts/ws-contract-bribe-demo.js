@@ -141,7 +141,7 @@ wss.on('connection', async function connection(ws, req){
     const payload = await generateTestBundle()
     console.log("bundle created")
     ws.send(JSON.stringify(payload))
-    await sleep(5000)
+    await sleep(10000)
     console.log("bundle sent")
     console.log(payload)
     await checkBundle(payload)
