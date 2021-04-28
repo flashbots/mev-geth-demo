@@ -125,9 +125,9 @@ const checkBundle = async (payload) => {
       console.log('Profit equals bribe?', checkProfit)
       if(checkProfit){
         wss.close()
-      }else{
-        console.log("Bundle tx has not been mined yet")
       }
+    } else{
+      console.log("Bundle tx has not been mined yet")
     }
   }, 5000);
 }
