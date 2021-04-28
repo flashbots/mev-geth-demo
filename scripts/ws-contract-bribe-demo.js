@@ -108,23 +108,28 @@ const generateTestBundle = async () => {
 }
 
 const checkBundle = async (payload) => {
-  const hash = ethers.utils.keccak256(payload.data.encodedTxs[0])
-  console.log(hash)
-  const receipt = await simpleProvider.getTransactionReceipt(hash) 
-  console.log(receipt) 
-  const block = receipt.blockNumber
-  const balanceBefore = await simpleProvider.getBalance(faucet.address, block - 1)
-  const balanceAfter = await simpleProvider.getBalance(faucet.address, block)
-  console.log('Miner before', balanceBefore.toString())
-  console.log('Miner after', balanceAfter.toString())
-  // subtract 2 for block reward
-  const profit = balanceAfter.sub(balanceBefore).sub(ethers.utils.parseEther('2'))
-  console.log('Profit (ETH)', ethers.utils.formatEther(profit))
-  const checkProfit = (ethers.utils.formatEther(profit) === '0.216321768999')
-  console.log('Profit equals bribe?', checkProfit)
-  if(checkProfit){
-    wss.close()
-  }
+  var timer = setInterval(async function() {
+    const hash = ethers.utils.keccak256(payload.data.encodedTxs[0])
+    const receipt = await simpleProvider.getTransactionReceipt(hash) 
+    if(receipt){ // If the tx has been mined, it returns null if pending
+      clearInterval(timer) // stop the setInterval once we get a valid receipt
+      const block = receipt.blockNumber
+      const balanceBefore = await simpleProvider.getBalance(faucet.address, block - 1)
+      const balanceAfter = await simpleProvider.getBalance(faucet.address, block)
+      console.log('Miner before', balanceBefore.toString())
+      console.log('Miner after', balanceAfter.toString())
+      // subtract 2 for block reward
+      const profit = balanceAfter.sub(balanceBefore).sub(ethers.utils.parseEther('2'))
+      console.log('Profit (ETH)', ethers.utils.formatEther(profit))
+      const checkProfit = (ethers.utils.formatEther(profit) === '0.216321768999')
+      console.log('Profit equals bribe?', checkProfit)
+      if(checkProfit){
+        wss.close()
+      }else{
+        console.log("Bundle tx has not been mined yet")
+      }
+    }
+  }, 5000);
 }
 
 wss.on('connection', async function connection(ws, req){
@@ -141,9 +146,7 @@ wss.on('connection', async function connection(ws, req){
     const payload = await generateTestBundle()
     console.log("bundle created")
     ws.send(JSON.stringify(payload))
-    await sleep(10000)
     console.log("bundle sent")
-    console.log(payload)
     await checkBundle(payload)
   } else {
     console.log("auth failed")
