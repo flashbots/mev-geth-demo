@@ -1,6 +1,7 @@
 // ws server - relay side
 const FlashbotsBundleProvider = require("@flashbots/ethers-provider-bundle").FlashbotsBundleProvider
 const ethers =require("ethers")
+const ethUtil = require('ethereumjs-util')
 const ContractFactory = require("ethers").ContractFactory
 const WebSocket = require('ws')
 const _ = require("lodash")
@@ -60,10 +61,37 @@ function heartbeat(){
   this.isAlive = true;
 }
 
-const accessKeys = ["secretABC", "secretDEF"] // access keys for auth
+const whitelistedAddresses = ["0x9a1911c0fb51472e1fe154d810dd7b0dfd54615f"] // EAO address, 0x trimmed
+
 // Helper functions
 const sleep = (ms) => {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+const timeoutRange = 5
+const isValidTimestamp = (timestamp) => {
+    const dateObj = new Date(timestamp)
+    const currentTime = new Date()
+    const lowerBound = new Date(currentTime.getTime() - timeoutRange *60000).getTime() // +- 5 mins UTC, to account for clock syncing
+    const upperBound = new Date(currentTime.getTime() + timeoutRange *60000).getTime() // 60000 for mins => ms
+    return dateObj.getTime() >= lowerBound && dateObj.getTime() <= upperBound
+}
+
+const isValidSignature = (signature, message) => {
+    try{
+        const messageHash = ethers.utils.arrayify(ethers.utils.id(message))
+        const parsedSignature = ethUtil.fromRpcSig(signature)
+        const recoveredAddress = "0x" + ethUtil.pubToAddress(ethUtil.ecrecover(messageHash, parsedSignature.v, parsedSignature.r, parsedSignature.s)).toString("hex");
+        console.log(recoveredAddress)
+        if(_.includes(whitelistedAddresses, recoveredAddress) && isValidTimestamp(parseInt(message)* 1000)){
+            return true
+        }else {
+            return false
+        }
+    } catch (error){
+        console.log(error)
+        return false
+    }
 }
 const generateTestBundle = async () => {
   const authSigner = ethers.Wallet.createRandom()
@@ -139,18 +167,18 @@ wss.on('connection', async function connection(ws, req){
     console.log("received message from ws client: " + message)
   })
   
-  // Ensure the client is authenticated
-  if(_.includes(accessKeys, req.headers['x-api-key'])){
-    // Send bundle to test
-    await sleep(1000)
-    const payload = await generateTestBundle()
-    console.log("bundle created")
-    ws.send(JSON.stringify(payload))
-    console.log("bundle sent")
-    await checkBundle(payload)
-  } else {
-    console.log("auth failed")
-    ws.terminate()
+  if(req.headers['x-auth-message']){
+      const parsedAuthMessage = JSON.parse(req.headers['x-auth-message'])
+      console.log(parsedAuthMessage)
+      if(isValidSignature(parsedAuthMessage.signature, parsedAuthMessage.timestamp)){
+        await sleep(1000)
+        const payload = await generateTestBundle()
+        ws.send(JSON.stringify(payload))
+        await checkBundle(payload)
+      }else{
+        console.log("auth failed")
+        ws.terminate()
+      }
   }
 
   ws.on("close", m => {

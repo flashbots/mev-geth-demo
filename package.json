@@ -8,6 +8,7 @@
   "dependencies": {
     "@flashbots/ethers-provider-bundle": "flashbots/ethers-provider-flashbots-bundle#jason/v0.2",
     "@types/node": "^14.14.10",
+    "ethereumjs-util": "^7.0.10",
     "ethers": "^5.0.23",
     "lodash": "^4.17.21",
     "solc": "^0.7.5",
