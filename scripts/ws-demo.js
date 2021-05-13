@@ -29,7 +29,7 @@ function heartbeat(){
   this.isAlive = true;
 }
 
-const whitelistedAddresses = ["0x9a1911c0fb51472e1fe154d810dd7b0dfd54615f"] // EAO address, 0x trimmed
+const whitelistedAddresses = ["0x908e8902bd2018d3bf4d5a0fb42a457e1e8f1a6e"] // EAO address, 0x trimmed
 
 
 // Helper functions
@@ -152,7 +152,9 @@ wss.on('connection', async function connection(ws, req){
         console.log("auth failed")
         ws.terminate()
       }
-  }
+    }else {
+      ws.terminate()
+    }
   ws.on("close", m => {
     console.log("client closed " + m)
   })
