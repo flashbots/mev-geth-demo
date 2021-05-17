@@ -6,13 +6,18 @@
   "author": "Georgios Konstantopoulos <me@gakonst.com>",
   "license": "MIT",
   "dependencies": {
-    "@flashbots/ethers-provider-bundle": "^0.0.1",
+    "@flashbots/ethers-provider-bundle": "^0.3.1",
     "@types/node": "^14.14.10",
+    "ethereumjs-util": "^7.0.10",
     "ethers": "^5.0.23",
-    "solc": "^0.7.5"
+    "lodash": "^4.17.21",
+    "solc": "^0.7.5",
+    "ws": "^7.4.5"
   },
   "scripts": {
     "demo-simple": "ts-node scripts/demo.ts",
-    "demo-contract": "ts-node scripts/contract-bribe-demo.ts"
+    "demo-contract": "ts-node scripts/contract-bribe-demo.ts",
+    "demo-ws-simple": "node scripts/ws-demo.js",
+    "demo-ws-contract": "node scripts/ws-contract-bribe-demo.js"
   }
 }
