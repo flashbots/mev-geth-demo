@@ -6,7 +6,7 @@
   "author": "Georgios Konstantopoulos <me@gakonst.com>",
   "license": "MIT",
   "dependencies": {
-    "@flashbots/ethers-provider-bundle": "flashbots/ethers-provider-flashbots-bundle#jason/v0.2",
+    "@flashbots/ethers-provider-bundle": "^0.3.1",
     "@types/node": "^14.14.10",
     "ethereumjs-util": "^7.0.10",
     "ethers": "^5.0.23",
