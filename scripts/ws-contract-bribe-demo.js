@@ -124,7 +124,7 @@ const generateTestBundle = async () => {
   const targetBlockNumber = blk + 10
   const payload = {
     data: {
-      encodedTxs: await flashBotsProvider.signBundle(txs),
+      txs: await flashBotsProvider.signBundle(txs),
       blockNumber: `0x${targetBlockNumber.toString(16)}`,
       minTimestamp: 0,
       maxTimestamp: 0,
@@ -137,7 +137,7 @@ const generateTestBundle = async () => {
 
 const checkBundle = async (payload) => {
   var timer = setInterval(async function() {
-    const hash = ethers.utils.keccak256(payload.data.encodedTxs[0])
+    const hash = ethers.utils.keccak256(payload.data.txs[0])
     const receipt = await simpleProvider.getTransactionReceipt(hash) 
     if(receipt){ // If the tx has been mined, it returns null if pending
       clearInterval(timer) // stop the setInterval once we get a valid receipt
