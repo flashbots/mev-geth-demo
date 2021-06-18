@@ -1,5 +1,5 @@
 import { ethers, Wallet } from 'ethers'
-import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle'
+import fetch from 'node-fetch'
 
 const FAUCET = '0x133be114715e5fe528a1b8adf36792160601a2d63ab59d1fd454275b31328791'
 const DUMMY_RECEIVER = '0x1111111111111111111111111111111111111111'
@@ -13,7 +13,6 @@ const user = ethers.Wallet.createRandom().connect(provider)
 ;(async () => {
   // wrap it with the mev-geth provider
   const authSigner = Wallet.createRandom()
-  const flashbotsProvider = await FlashbotsBundleProvider.create(provider, authSigner, 'http://localhost:8545', 5465)
 
   console.log('Faucet', faucet.address)
   // fund the user with some Ether from the coinbase address
@@ -31,38 +30,59 @@ const user = ethers.Wallet.createRandom().connect(provider)
   const bribe = ethers.utils.parseEther('0.06666666666')
   const txs = [
     // some transaction
-    {
-      signer: user,
-      transaction: {
-        to: DUMMY_RECEIVER,
-        value: ethers.utils.parseEther('0.1'),
-        nonce: nonce
-      }
-    },
+    await user.signTransaction({
+      to: DUMMY_RECEIVER,
+      value: ethers.utils.parseEther('0.1'),
+      nonce: nonce
+    }),
     // the miner bribe
-    {
-      signer: user,
-      transaction: {
-        to: faucet.address,
-        value: bribe,
-        nonce: nonce + 1
-      }
-    }
+    await user.signTransaction({
+      to: faucet.address,
+      value: bribe,
+      nonce: nonce + 1
+    })
   ]
 
   console.log('Submitting bundle')
   const blk = await provider.getBlockNumber()
-  const result = await flashbotsProvider.sendBundle(txs, blk + 5)
-  if ('error' in result) {
-    throw new Error(result.error.message)
+
+  for (let i = 1; i <= 10; i++) {
+    const params = [
+      {
+        txs,
+        blockNumber: `0x${(blk + i).toString(16)}`
+      }
+    ]
+    const body = {
+      params,
+      method: 'eth_sendBundle',
+      id: '123'
+    }
+    const respRaw = await fetch('http://localhost:8545', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    if (respRaw.status >= 300) {
+      console.error('error sending bundle')
+      process.exit(1)
+    }
+    const json = await respRaw.json()
+    if (json.error) {
+      console.error('error sending bundle, error was', json.error)
+      process.exit(1)
+    }
+  }
+  while (true) {
+    const newBlock = await provider.getBlockNumber()
+    if (newBlock > blk + 10) break
+    await new Promise((resolve) => setTimeout(resolve, 100)) // sleep
   }
 
-  await result.wait()
-  const receipts = await result.receipts()
-  const block = receipts[0].blockNumber
-
-  const balanceBefore = await provider.getBalance(faucet.address, block - 1)
-  const balanceAfter = await provider.getBalance(faucet.address, block)
+  const balanceBefore = await provider.getBalance(faucet.address, blk)
+  const balanceAfter = await provider.getBalance(faucet.address, blk + 10)
   console.log('Miner before', balanceBefore.toString())
   console.log('Miner after', balanceAfter.toString())
   // subtract 2 for block reward

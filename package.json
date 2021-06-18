@@ -11,6 +11,7 @@
     "ethereumjs-util": "^7.0.10",
     "ethers": "^5.0.23",
     "lodash": "^4.17.21",
+    "node-fetch": "^2.6.1",
     "solc": "^0.7.5",
     "ws": "^7.4.5"
   },
@@ -19,5 +20,8 @@
     "demo-contract": "ts-node scripts/contract-bribe-demo.ts",
     "demo-ws-simple": "node scripts/ws-demo.js",
     "demo-ws-contract": "node scripts/ws-contract-bribe-demo.js"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.5.10"
   }
 }

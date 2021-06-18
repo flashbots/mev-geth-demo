@@ -1,5 +1,6 @@
 import { ethers, ContractFactory } from 'ethers'
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle'
+import fetch from 'node-fetch'
 // @ts-ignore
 import solc from 'solc'
 
@@ -66,25 +67,49 @@ const user = ethers.Wallet.createRandom().connect(provider)
   const bribeTx = await contract.populateTransaction.bribe({
     value: ethers.utils.parseEther('0.216321768999')
   })
-  const txs = [
-    {
-      signer: user,
-      transaction: bribeTx
-    }
-  ]
+  const txs = [await user.signTransaction(bribeTx)]
 
   console.log('Submitting bundle')
   const blk = await provider.getBlockNumber()
-  const result = await flashbotsProvider.sendBundle(txs, blk + 5)
-  if ('error' in result) {
-    throw new Error(result.error.message)
-  }
-  await result.wait()
-  const receipts = await result.receipts()
-  const block = receipts[0].blockNumber
 
-  const balanceBefore = await provider.getBalance(faucet.address, block - 1)
-  const balanceAfter = await provider.getBalance(faucet.address, block)
+  for (let i = 1; i <= 10; i++) {
+    const params = [
+      {
+        txs,
+        blockNumber: `0x${(blk + i).toString(16)}`
+      }
+    ]
+    const body = {
+      params,
+      method: 'eth_sendBundle',
+      id: '123'
+    }
+    const respRaw = await fetch('http://localhost:8545', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    if (respRaw.status >= 300) {
+      console.error('error sending bundle')
+      process.exit(1)
+    }
+    const json = await respRaw.json()
+    if (json.error) {
+      console.error('error sending bundle, error was', json.error)
+      process.exit(1)
+    }
+  }
+  while (true) {
+    const newBlock = await provider.getBlockNumber()
+    if (newBlock > blk + 10) break
+    await new Promise((resolve) => setTimeout(resolve, 100)) // sleep
+  }
+
+  const balanceBefore = await provider.getBalance(faucet.address, blk)
+  const balanceAfter = await provider.getBalance(faucet.address, blk + 10)
+
   console.log('Miner before', balanceBefore.toString())
   console.log('Miner after', balanceAfter.toString())
   // subtract 2 for block reward
