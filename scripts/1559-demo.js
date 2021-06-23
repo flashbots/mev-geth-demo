@@ -4,14 +4,17 @@ const {signEIP1559Tx} = require('./1559-helpers')
 
 const localRPC = "http://localhost:8545/"
 const client = new Web3(new Web3.providers.HttpProvider(localRPC))
+var BN = client.utils.BN;
 
 const FAUCET_PK = '133be114715e5fe528a1b8adf36792160601a2d63ab59d1fd454275b31328791'
 const FAUCET_ADDRESS = '0xd912AeCb07E9F4e1eA8E6b4779e7Fb6Aa1c3e4D8'
 const DUMMY_RECEIVER = '0x1111111111111111111111111111111111111111'
-
+const MINER_BRIBE = 0.123 * 10 ** 18
+const RECEIVER_VALUE = 0.321 * 10 ** 18
+const BLOCK_REWARD = 2 * 10 ** 18
 const testWallet = client.eth.accounts.create();
 
-// only for reference
+// only for reference, not used elsewhere
 const sample1559TxInput = {
     to: '0x0000000000000000000000000000000000000000',
     value: 1 * 10 ** 18, // 1 ETH,
@@ -22,15 +25,6 @@ const sample1559TxInput = {
     privateKey: "133be114715e5fe528a1b8adf36792160601a2d63ab59d1fd454275b31328791"
 }
 
-const getTxStatus = async (hash) => {
-    const txReceipt = await client.eth.getTransactionReceipt(hash)
-    const txInfo = await client.eth.getTransaction(hash).then(console.log);
-    return {
-        txReceipt, 
-        txInfo
-    }
-}
-
 const checkBundleStatus = async (hash) => {
     var timer = setInterval(async function() {
       const receipt = await client.eth.getTransactionReceipt(hash)
@@ -39,23 +33,30 @@ const checkBundleStatus = async (hash) => {
         const block = receipt.blockNumber
         // Given the base fee is burnt and priority fee is set to 0, miner balance shouldn't change
 
-        // const balanceBefore = await client.eth.getBalance(faucet.address, block - 1)
-        // const balanceAfter = await client.eth.getBalance(faucet.address, block)
-        // console.log("Miner before", balanceBefore.toString())
-        // console.log("Miner after", balanceAfter.toString())
-        // const profit = balanceAfter - (balanceBefore).sub(client.utils.parseEther('2'))
-        // console.log("Profit (ETH)", ethers.utils.formatEther(profit))
-        // console.log("Profit equals bribe?", profit.eq(bribe))
+        const MinerBalanceBefore = await client.eth.getBalance(FAUCET_ADDRESS, block - 1)
+        const MinerBalanceAfter = await client.eth.getBalance(FAUCET_ADDRESS, block)
+        console.log("Miner before", MinerBalanceBefore.toString())
+        console.log("Miner after", MinerBalanceAfter.toString())
+
+        // balance before/after the block is mined, remove the block reward
+        const minerProfit = new BN(MinerBalanceAfter).sub(new BN(MinerBalanceBefore))
+        const finalProfit = minerProfit.sub(new BN(BLOCK_REWARD.toString())).toString();
+
+        console.log("Profit (ETH)", finalProfit.toString())
+        console.log("Profit equals bribe?", parseInt(finalProfit)==MINER_BRIBE)
         
-        // 1st tx of our bundle should be processed and the balance of receiver should increase
+        // 1st tx of our bundle should also be processed and the balance of receiver should increase
         const balanceBefore = await client.eth.getBalance(DUMMY_RECEIVER, block - 1)
         const balanceAfter = await client.eth.getBalance(DUMMY_RECEIVER, block)
+        const receiverProfit = new BN(balanceAfter).sub(new BN(balanceBefore)).toString();
+
         console.log("Receiver before", balanceBefore.toString())
         console.log("Receiver after", balanceAfter.toString())
+        console.log("Received value?", parseInt(receiverProfit)==RECEIVER_VALUE)
       } else{
         console.log("Bundle tx has not been mined yet")
       }
-    }, 1000);
+    }, 5000);
   }
 
 const main = async() => {
@@ -68,7 +69,8 @@ const main = async() => {
         data: "0x", // direct send
         gasLimit: 21000,
         priorityFee: 0,
-        privateKey: FAUCET_PK
+        privateKey: FAUCET_PK,
+        nonce: await client.eth.getTransactionCount(FAUCET_ADDRESS)
     }
     const signedFundTx = await signEIP1559Tx(fundAccountInput, client)
     const fundTxReceipt = (await client.eth.sendSignedTransaction(signedFundTx))
@@ -78,34 +80,36 @@ const main = async() => {
 
     // Now we create a bundle
     const blockNumber = await client.eth.getBlockNumber()
-    console.log(blockNumber)
-
+    console.log("Bundle target block no: ", blockNumber + 10)
+    const nonce = await client.eth.getTransactionCount(testWallet.address);
     const txs = [
         // random tx at bundle index 0
         await signEIP1559Tx({
             to: DUMMY_RECEIVER,
-            value: 0.1 * 10 ** 18, // 1 ETH
+            value: RECEIVER_VALUE, // ETH
             fromAddress: testWallet.address,
             data: "0x", // direct send
             gasLimit: 21000,
             priorityFee: 0,
-            privateKey: testWallet.privateKey.substring(2) // remove 0x in pk
+            privateKey: testWallet.privateKey.substring(2), // remove 0x in pk
+            nonce: nonce
         }, client),
         // miner bribe
         await signEIP1559Tx({
             to: FAUCET_ADDRESS,
-            value: 0.05 * 10 ** 18, // 1 ETH
+            value: MINER_BRIBE, // ETH
             fromAddress: testWallet.address,
             data: "0x", // direct send
             gasLimit: 21000,
             priorityFee: 0,
-            privateKey: testWallet.privateKey.substring(2) // remove 0x in pk
+            privateKey: testWallet.privateKey.substring(2), // remove 0x in pk
+            nonce: nonce + 1
         }, client)
     ]
     const params = [
       {
         txs,
-        blockNumber: `0x${(blockNumber + 5).toString(16)}`
+        blockNumber: `0x${(blockNumber + 10).toString(16)}`
       }
     ]
     const body = {

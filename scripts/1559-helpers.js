@@ -18,7 +18,7 @@ const signEIP1559Tx = async (input, client) => {
         to: input.to,
         data: input.data,
         value: Web3.utils.toHex(input.value),
-        nonce: Web3.utils.toHex(accountNonce),
+        nonce: Web3.utils.toHex(input.nonce) || Web3.utils.toHex(accountNonce),
         gasLimit: Web3.utils.toHex(input.gasLimit),
         maxFeePerGas: Web3.utils.toHex(await getLatestBaseFee() + input.priorityFee),
         maxPriorityFeePerGas: Web3.utils.toHex(input.priorityFee), // 0 tip for now
