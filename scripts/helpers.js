@@ -2,7 +2,8 @@
 const Common = require('@ethereumjs/common').default
 const ethTx = require('@ethereumjs/tx')
 const Web3 = require('web3');
-
+const web3 = new Web3();
+const ethers = require('ethers')
 const localRPC = "http://localhost:8545/"
 const chainID = 5465 // from genesis.json file, for the common required for tx signing
 const client = new Web3(new Web3.providers.HttpProvider(localRPC))
@@ -41,5 +42,18 @@ const signEIP1559Tx = async (input, client) => {
     return '0x' + signedTx.serialize().toString('hex');
 }
 
+const generateRelaySignature = async(megabundle, relayPk) => {
+    const formattedMegabundle = [
+        megabundle.txs,
+        '0x' + megabundle.blockNumber.toString(16),
+        (megabundle.minTimestamp == 0) ? '0x' : '0x' + megabundle.minTimestamp.toString(16),
+        (megabundle.maxTimestamp == 0) ? '0x' : '0x' + megabundle.maxTimestamp.toString(16),
+        megabundle.revertingTxHashes
+    ]
+    const encodedMegabundle = ethers.utils.RLP.encode(formattedMegabundle)
+    const signedMegaBundle = web3.eth.accounts.sign(encodedMegabundle, relayPk)
+    return signedMegaBundle.signature
+}
 
 exports.signEIP1559Tx = signEIP1559Tx
+exports.generateRelaySignature = generateRelaySignature
