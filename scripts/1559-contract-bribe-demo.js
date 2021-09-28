@@ -12,6 +12,7 @@ const client = new Web3(new Web3.providers.HttpProvider(localRPC))
 var BN = client.utils.BN
 const FAUCET_ADDRESS = '0xd912AeCb07E9F4e1eA8E6b4779e7Fb6Aa1c3e4D8'
 const testWallet = client.eth.accounts.create();
+const TRUSTED_RELAY_PK = '0ceb0619ccbb1092e3d0e3874e4582abe5f9518262e465575ca837a7dad0703d' // 0xfb11e78C4DaFec86237c2862441817701fdf197F, see run.sh
 
 const CONTRACT = `
 // SPDX-License-Identifier: UNLICENSED
@@ -44,7 +45,7 @@ const ABI = COMPILED.Bribe.abi
 const BIN = '0x' + COMPILED.Bribe.evm.bytecode.object
 // miner pk on the private network
 const FAUCET_PK = "0x133be114715e5fe528a1b8adf36792160601a2d63ab59d1fd454275b31328791"
-//const DUMMY_RECEIVER = "0x1111111111111111111111111111111111111111" // address we'll send funds via bundles
+// const DUMMY_RECEIVER = "0x1111111111111111111111111111111111111111" // address we'll send funds via bundles
 const simpleProvider = new ethers.providers.JsonRpcProvider("http://localhost:8545")
 const faucet = new ethers.Wallet(FAUCET_PK, simpleProvider)
 // we create a random user who will submit bundles
@@ -74,15 +75,6 @@ const checkMegabundleStatus = async (hash) => {
 
       console.log("Profit (ETH)", finalProfit.toString())
       console.log("Mega bundle Profit equals bribe?", parseInt(finalProfit)==MINER_BRIBE)
-      
-      // 1st tx of our bundle should also be processed and the balance of receiver should increase
-      const balanceBefore = await client.eth.getBalance(DUMMY_RECEIVER, block - 1)
-      const balanceAfter = await client.eth.getBalance(DUMMY_RECEIVER, block)
-      const receiverProfit = new BN(balanceAfter).sub(new BN(balanceBefore)).toString();
-
-      console.log("Receiver before", balanceBefore.toString())
-      console.log("Receiver after", balanceAfter.toString())
-      console.log("Received value?", parseInt(receiverProfit)==RECEIVER_VALUE)
     } else{
       console.log("Bundle tx has not been mined yet")
     }
@@ -90,7 +82,7 @@ const checkMegabundleStatus = async (hash) => {
 }
 
 
-const checkBundleStatus = async (hash) => {
+const checkBundleStatus = async (hash, contractAddress) => {
     var timer = setInterval(async function() {
       const receipt = await client.eth.getTransactionReceipt(hash)
       if(receipt){ // If the tx has been mined, it returns null if pending
@@ -136,9 +128,9 @@ const checkBundleStatus = async (hash) => {
         const params = [
           {
             txs,
-            blockNumber: `0x${(blockNumber + 15).toString(16)}`,
-            minTimestamp: '0x',
-            maxTimestamp: '0x',
+            blockNumber: blockNumber + 15,
+            minTimestamp: 0,
+            maxTimestamp: 0,
             revertingTxHashes: [],
             relaySignature: signedMegaBundle
           }
@@ -155,7 +147,7 @@ const checkBundleStatus = async (hash) => {
                 'Content-Type': 'application/json'
             }
         })
-        await checkMegabundleStatus(client.utils.keccak256(txs[1]))
+        await checkMegabundleStatus(client.utils.keccak256(txs[0]))
       } else{
         console.log("Bundle tx has not been mined yet")
       }
@@ -232,7 +224,7 @@ const main = async () => {
         }
     })
     console.log("txHash of bundle tx #1 ", client.utils.keccak256(txs[0]))
-    await checkBundleStatus(client.utils.keccak256(txs[0])) // to get hash
+    await checkBundleStatus(client.utils.keccak256(txs[0]), contractAddress) // to get hash
 }
 
 main()

@@ -129,9 +129,9 @@ const checkBundleStatus = async (hash) => {
         const params = [
           {
             txs,
-            blockNumber: `0x${(blockNumber + 15).toString(16)}`,
-            minTimestamp: '0x',
-            maxTimestamp: '0x',
+            blockNumber: blockNumber + 15,
+            minTimestamp: 0,
+            maxTimestamp: 0,
             revertingTxHashes: [],
             relaySignature: signedMegaBundle
           }
