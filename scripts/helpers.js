@@ -45,9 +45,9 @@ const signEIP1559Tx = async (input, client) => {
 const generateRelaySignature = async(megabundle, relayPk) => {
     const formattedMegabundle = [
         megabundle.txs,
-        '0x' + megabundle.blockNumber.toString(16),
-        (megabundle.minTimestamp == 0) ? '0x' : '0x' + megabundle.minTimestamp.toString(16),
-        (megabundle.maxTimestamp == 0) ? '0x' : '0x' + megabundle.maxTimestamp.toString(16),
+        ethers.BigNumber.from(megabundle.blockNumber).toHexString(),
+        (megabundle.minTimestamp == 0) ? '0x' : ethers.BigNumber.from(megabundle.minTimestamp).toHexString(),
+        (megabundle.maxTimestamp == 0) ? '0x' : ethers.BigNumber.from(megabundle.maxTimestamp).toHexString(),
         megabundle.revertingTxHashes
     ]
     const encodedMegabundle = ethers.utils.RLP.encode(formattedMegabundle)
