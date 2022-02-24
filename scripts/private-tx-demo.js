@@ -31,9 +31,13 @@ const sendPrivateRawTransaction = async(rpc_address, client, from, pk, to, value
         nonce: null
     }, client)
 
+    return await sendRawTransaction(rpc_address, 'eth_sendPrivateRawTransaction', tx)
+}
+
+const sendRawTransaction = async(rpc_address, method, tx) => {
     const body = {
       params: [tx],
-        method: 'eth_sendPrivateRawTransaction',
+        method,
         id: '124'
     }
     const respRaw = await fetch(rpc_address, {
@@ -43,7 +47,7 @@ const sendPrivateRawTransaction = async(rpc_address, client, from, pk, to, value
             'Content-Type': 'application/json'
         }
     })
-    return await respRaw.json()
+    return [tx, await respRaw.json()]
 }
 
 const main = async() => {
@@ -57,7 +61,7 @@ const main = async() => {
     /* Check that private transactions are mined */
     const testWalletBalanceBefore = Number(await client.eth.getBalance(testWallet.address))
 
-    const resp1 = await sendPrivateRawTransaction(minerRPC, client, FAUCET_ADDRESS, FAUCET_PK, testWallet.address, TEST_WALLET_RECEIVE_VALUE)
+    const [_, resp1] = await sendPrivateRawTransaction(minerRPC, client, FAUCET_ADDRESS, FAUCET_PK, testWallet.address, TEST_WALLET_RECEIVE_VALUE)
     if (resp1.error) {
         console.log("Incorrect response", resp1)
         process.exit(1)
@@ -77,7 +81,7 @@ const main = async() => {
 
     const balanceBefore = Number(await client.eth.getBalance(DUMMY_RECEIVER))
 
-    const resp2 = await sendPrivateRawTransaction(otherRPC, nonMiningClient, testWallet.address, testWallet.privateKey.substring(2), DUMMY_RECEIVER, RECEIVER_VALUE)
+    const [privateTx, resp2] = await sendPrivateRawTransaction(otherRPC, nonMiningClient, testWallet.address, testWallet.privateKey.substring(2), DUMMY_RECEIVER, RECEIVER_VALUE)
     if (resp2.error) {
         console.log("Incorrect response", resp2)
         process.exit(1)
@@ -105,6 +109,12 @@ const main = async() => {
     }
 
     /* After one minute the tx should be dropped */
+
+    const [_2, resp3] = await sendRawTransaction(otherRPC, 'eth_sendRawTransaction', privateTx)
+    if (resp3.error === null || resp3.error.message !== 'already known') {
+        console.log("incorrect response on message replay as non-private", resp3)
+        process.exit(1)
+    }
 }
 
 main()
