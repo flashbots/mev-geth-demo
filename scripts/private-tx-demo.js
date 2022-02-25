@@ -95,7 +95,7 @@ const main = async() => {
         process.exit(1)
     }
 
-    await delay(60 * 1000)
+    await delay(20 * 1000)
 
     /* Wait two more blocks */
     blockNumber = await client.eth.getBlockNumber()
