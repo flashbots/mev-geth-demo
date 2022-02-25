@@ -24,7 +24,8 @@
     "demo-ws-simple": "node scripts/ws-demo.js",
     "demo-ws-contract": "node scripts/ws-contract-bribe-demo.js",
     "demo-simple": "node scripts/1559-demo.js",
-    "demo-contract": "node scripts/1559-contract-bribe-demo.js"
+    "demo-contract": "node scripts/1559-contract-bribe-demo.js",
+    "demo-private-tx": "node scripts/private-tx-demo.js"
   },
   "devDependencies": {
     "@types/node-fetch": "^2.5.10"
