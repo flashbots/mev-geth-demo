@@ -1,23 +1,14 @@
 const Web3 = require('web3')
 const fetch = require('node-fetch')
+const process = require('process')
 
-const {signEIP1559Tx, fundFromFaucet, generateRelaySignature} = require('./helpers')
+const {signEIP1559Tx, awaitBlock, delay} = require('./helpers')
 
 const FAUCET_PK = '133be114715e5fe528a1b8adf36792160601a2d63ab59d1fd454275b31328791'
 const FAUCET_ADDRESS = '0xd912AeCb07E9F4e1eA8E6b4779e7Fb6Aa1c3e4D8'
 const DUMMY_RECEIVER = '0x1111111111111111111111111111111111111111'
 const RECEIVER_VALUE = 0.00321 * 10 ** 18
 const TEST_WALLET_RECEIVE_VALUE = 100*RECEIVER_VALUE
-
-function delay(ms) {
-    return new Promise( resolve => setTimeout(resolve, ms) );
-}
-
-const awaitBlock = async(client, blockNumber) => {
-    while (await client.eth.getBlockNumber() < blockNumber) {
-        await delay(1000)
-    }
-}
 
 const sendPrivateRawTransaction = async(rpc_address, client, from, pk, to, value) => {
     const tx = await signEIP1559Tx({

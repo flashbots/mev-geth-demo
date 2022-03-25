@@ -19,6 +19,7 @@
     "ws": "^7.4.5"
   },
   "scripts": {
+    "lint": "eslint .",
     "demo-simple-old": "ts-node scripts/demo.ts",
     "demo-contract-old": "ts-node scripts/contract-bribe-demo.ts",
     "demo-ws-simple": "node scripts/ws-demo.js",
@@ -28,6 +29,7 @@
     "demo-private-tx": "node scripts/private-tx-demo.js"
   },
   "devDependencies": {
-    "@types/node-fetch": "^2.5.10"
+    "@types/node-fetch": "^2.5.10",
+    "eslint": "^8.11.0"
   }
 }

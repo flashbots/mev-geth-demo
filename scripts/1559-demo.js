@@ -1,6 +1,7 @@
 const Web3 = require('web3')
 const fetch = require('node-fetch')
-const {signEIP1559Tx, generateRelaySignature} = require('./helpers')
+const process = require('process')
+const {signEIP1559Tx, generateRelaySignature, awaitBlock} = require('./helpers')
 
 const localRPC = "http://localhost:8545/"
 const client = new Web3(new Web3.providers.HttpProvider(localRPC))
@@ -15,7 +16,7 @@ const RECEIVER_VALUE = 0.321 * 10 ** 18
 const BLOCK_REWARD = 2 * 10 ** 18
 const testWallet = client.eth.accounts.create();
 
-// only for reference, not used elsewhere
+/* only for reference, not used elsewhere
 const sample1559TxInput = {
     to: '0x0000000000000000000000000000000000000000',
     value: 1 * 10 ** 18, // 1 ETH,
@@ -24,12 +25,12 @@ const sample1559TxInput = {
     gasLimit: 21000,
     priorityFee: 0,
     privateKey: "133be114715e5fe528a1b8adf36792160601a2d63ab59d1fd454275b31328791"
-}
+} */
 
 const checkMegabundleStatus = async (hash) => {
   var timer = setInterval(async function() {
     const receipt = await client.eth.getTransactionReceipt(hash)
-    if(receipt){ // If the tx has been mined, it returns null if pending
+    if (receipt) { // If the tx has been mined, it returns null if pending
       clearInterval(timer) // stop the setInterval once we get a valid receipt
       const block = receipt.blockNumber
       // Given the base fee is burnt and priority fee is set to 0, miner balance shouldn't change
@@ -54,12 +55,150 @@ const checkMegabundleStatus = async (hash) => {
       console.log("Receiver before", balanceBefore.toString())
       console.log("Receiver after", balanceAfter.toString())
       console.log("Received value?", parseInt(receiverProfit)==RECEIVER_VALUE)
-    } else{
+    } else {
       console.log("Bundle tx has not been mined yet")
     }
   }, 5000);
 }
 
+const checkRevertingBundles = async () => {
+  // Now we create a bundle
+  const blockNumber = await client.eth.getBlockNumber()
+  console.log("Bundle target block no: ", blockNumber + 10)
+  const nonce = await client.eth.getTransactionCount(testWallet.address);
+  const txs = [
+      // random tx at bundle index 0
+      await signEIP1559Tx({
+          to: DUMMY_RECEIVER,
+          value: RECEIVER_VALUE, // ETH
+          fromAddress: testWallet.address,
+          data: "0x", // direct send
+          gasLimit: 21000,
+          priorityFee: 0,
+          privateKey: testWallet.privateKey.substring(2), // remove 0x in pk
+          nonce: nonce
+      }, client),
+      // miner bribe
+      await signEIP1559Tx({
+          to: FAUCET_ADDRESS,
+          value: MINER_BRIBE, // ETH
+          fromAddress: testWallet.address,
+          data: "0x", // direct send
+          gasLimit: 21000 * 10**10,
+          priorityFee: 0,
+          privateKey: testWallet.privateKey.substring(2), // remove 0x in pk
+          nonce: nonce + 1
+      }, client)
+  ]
+  const params = [
+    {
+      txs,
+      blockNumber: `0x${(blockNumber + 10).toString(16)}`
+    }
+  ]
+  const body = {
+      params,
+      method: 'eth_sendBundle',
+      id: '123'
+  }
+  await fetch('http://localhost:8545', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: {
+          'Content-Type': 'application/json'
+      }
+  })
+
+  await awaitBlock(client, blockNumber + 15)
+
+  for (let i = 0; i < 2; ++i) {
+    const receipt = await client.eth.getTransactionReceipt(client.utils.keccak256(txs[i]))
+    if (receipt) {
+      console.log("transaction from a reverting bundle was inserted")
+      process.exit(1)
+    }
+  }
+}
+
+const checkRevertingMebagundle = async () => {
+  const updatedNonce = await client.eth.getTransactionCount(testWallet.address)
+  const txs = [
+    await signEIP1559Tx({
+        to: DUMMY_RECEIVER,
+        value: RECEIVER_VALUE, // ETH
+        fromAddress: testWallet.address,
+        data: "0x", // direct send
+        gasLimit: 21000,
+        priorityFee: 0,
+        privateKey: testWallet.privateKey.substring(2), // remove 0x in pk
+        nonce: updatedNonce
+    }, client),
+    // random tx at bundle index 0
+    await signEIP1559Tx({
+        to: DUMMY_RECEIVER,
+        value: RECEIVER_VALUE, // ETH
+        fromAddress: testWallet.address,
+        data: "0x", // direct send
+        gasLimit: 21000 * 10**10,
+        priorityFee: 0,
+        privateKey: testWallet.privateKey.substring(2), // remove 0x in pk
+        nonce: updatedNonce + 1
+    }, client),
+    // miner bribe
+    await signEIP1559Tx({
+        to: FAUCET_ADDRESS,
+        value: MINER_BRIBE, // ETH
+        fromAddress: testWallet.address,
+        data: "0x", // direct send
+        gasLimit: 21000,
+        priorityFee: 0,
+        privateKey: testWallet.privateKey.substring(2), // remove 0x in pk
+        nonce: updatedNonce + 2
+    }, client)
+  ]
+  const blockNumber = await client.eth.getBlockNumber()
+  console.log("Megabundle target block no: ", blockNumber + 15)
+  const unsignedMegaBundle = {
+    txs: txs,
+    blockNumber: blockNumber + 15,
+    minTimestamp: 0,
+    maxTimestamp: 0,
+    revertingTxHashes: []
+  }
+  const signedMegaBundle = await generateRelaySignature(unsignedMegaBundle, TRUSTED_RELAY_PK)
+  const params = [
+    {
+      txs,
+      blockNumber: blockNumber + 15,
+      minTimestamp: 0,
+      maxTimestamp: 0,
+      revertingTxHashes: [],
+      relaySignature: signedMegaBundle
+    }
+  ]
+  const body = {
+      params,
+      method: 'eth_sendMegabundle',
+      id: '123'
+  }
+  await fetch('http://localhost:8545', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: {
+          'Content-Type': 'application/json'
+      }
+  })
+
+  await awaitBlock(client, blockNumber + 25)
+
+  for (let i = 0; i < 3; ++i) {
+    const receipt = await client.eth.getTransactionReceipt(client.utils.keccak256(txs[i]))
+    if (receipt) {
+      console.log("transaction from a reverting megabundle was inserted")
+      process.exit(1)
+    }
+  }
+}
 
 const checkBundleStatus = async (hash) => {
     var timer = setInterval(async function() {
@@ -141,7 +280,7 @@ const checkBundleStatus = async (hash) => {
             method: 'eth_sendMegabundle',
             id: '123'
         }
-        const respRaw = await fetch('http://localhost:8545', {
+        await fetch('http://localhost:8545', {
             method: 'POST',
             body: JSON.stringify(body),
             headers: {
@@ -173,6 +312,9 @@ const main = async() => {
     console.log("Funding tx mined at block #", fundTxReceipt.blockNumber)
     const testWalletBalance = await client.eth.getBalance(testWallet.address)
     console.log('Balance: ', testWalletBalance)
+
+    await checkRevertingBundles()
+    await checkRevertingMebagundle()
 
     // Now we create a bundle
     const blockNumber = await client.eth.getBlockNumber()
@@ -213,7 +355,7 @@ const main = async() => {
         method: 'eth_sendBundle',
         id: '123'
     }
-    const respRaw = await fetch('http://localhost:8545', {
+    await fetch('http://localhost:8545', {
         method: 'POST',
         body: JSON.stringify(body),
         headers: {
