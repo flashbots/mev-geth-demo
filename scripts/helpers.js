@@ -1,12 +1,23 @@
 
 const Common = require('@ethereumjs/common').default
 const ethTx = require('@ethereumjs/tx')
+const { Buffer } = require('buffer');
 const Web3 = require('web3');
 const web3 = new Web3();
 const ethers = require('ethers')
 const localRPC = "http://localhost:8545/"
 const chainID = 5465 // from genesis.json file, for the common required for tx signing
 const client = new Web3(new Web3.providers.HttpProvider(localRPC))
+
+function delay(ms) {
+    return new Promise( resolve => setTimeout(resolve, ms) );
+}
+
+const awaitBlock = async(client, blockNumber) => {
+    while (await client.eth.getBlockNumber() < blockNumber) {
+        await delay(1000)
+    }
+}
 
 const getLatestBaseFee = async() => {
     const block = await client.eth.getBlock("latest")
@@ -57,3 +68,5 @@ const generateRelaySignature = async(megabundle, relayPk) => {
 
 exports.signEIP1559Tx = signEIP1559Tx
 exports.generateRelaySignature = generateRelaySignature
+exports.awaitBlock = awaitBlock
+exports.delay = delay
