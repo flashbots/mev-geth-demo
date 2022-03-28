@@ -1,7 +1,6 @@
 const Web3 = require('web3')
 const fetch = require('node-fetch')
-const process = require('process')
-const {signEIP1559Tx, generateRelaySignature, awaitBlock} = require('./helpers')
+const {signEIP1559Tx, generateRelaySignature} = require('./helpers')
 
 const localRPC = "http://localhost:8545/"
 const client = new Web3(new Web3.providers.HttpProvider(localRPC))
@@ -59,145 +58,6 @@ const checkMegabundleStatus = async (hash) => {
       console.log("Bundle tx has not been mined yet")
     }
   }, 5000);
-}
-
-const checkRevertingBundles = async () => {
-  // Now we create a bundle
-  const blockNumber = await client.eth.getBlockNumber()
-  console.log("Bundle target block no: ", blockNumber + 10)
-  const nonce = await client.eth.getTransactionCount(testWallet.address);
-  const txs = [
-      // random tx at bundle index 0
-      await signEIP1559Tx({
-          to: DUMMY_RECEIVER,
-          value: RECEIVER_VALUE, // ETH
-          fromAddress: testWallet.address,
-          data: "0x", // direct send
-          gasLimit: 21000,
-          priorityFee: 0,
-          privateKey: testWallet.privateKey.substring(2), // remove 0x in pk
-          nonce: nonce
-      }, client),
-      // miner bribe
-      await signEIP1559Tx({
-          to: FAUCET_ADDRESS,
-          value: MINER_BRIBE, // ETH
-          fromAddress: testWallet.address,
-          data: "0x", // direct send
-          gasLimit: 21000 * 10**10,
-          priorityFee: 0,
-          privateKey: testWallet.privateKey.substring(2), // remove 0x in pk
-          nonce: nonce + 1
-      }, client)
-  ]
-  const params = [
-    {
-      txs,
-      blockNumber: `0x${(blockNumber + 10).toString(16)}`
-    }
-  ]
-  const body = {
-      params,
-      method: 'eth_sendBundle',
-      id: '123'
-  }
-  await fetch('http://localhost:8545', {
-      method: 'POST',
-      body: JSON.stringify(body),
-      headers: {
-          'Content-Type': 'application/json'
-      }
-  })
-
-  await awaitBlock(client, blockNumber + 15)
-
-  for (let i = 0; i < 2; ++i) {
-    const receipt = await client.eth.getTransactionReceipt(client.utils.keccak256(txs[i]))
-    if (receipt) {
-      console.log("transaction from a reverting bundle was inserted")
-      process.exit(1)
-    }
-  }
-}
-
-const checkRevertingMebagundle = async () => {
-  const updatedNonce = await client.eth.getTransactionCount(testWallet.address)
-  const txs = [
-    await signEIP1559Tx({
-        to: DUMMY_RECEIVER,
-        value: RECEIVER_VALUE, // ETH
-        fromAddress: testWallet.address,
-        data: "0x", // direct send
-        gasLimit: 21000,
-        priorityFee: 0,
-        privateKey: testWallet.privateKey.substring(2), // remove 0x in pk
-        nonce: updatedNonce
-    }, client),
-    // random tx at bundle index 0
-    await signEIP1559Tx({
-        to: DUMMY_RECEIVER,
-        value: RECEIVER_VALUE, // ETH
-        fromAddress: testWallet.address,
-        data: "0x", // direct send
-        gasLimit: 21000 * 10**10,
-        priorityFee: 0,
-        privateKey: testWallet.privateKey.substring(2), // remove 0x in pk
-        nonce: updatedNonce + 1
-    }, client),
-    // miner bribe
-    await signEIP1559Tx({
-        to: FAUCET_ADDRESS,
-        value: MINER_BRIBE, // ETH
-        fromAddress: testWallet.address,
-        data: "0x", // direct send
-        gasLimit: 21000,
-        priorityFee: 0,
-        privateKey: testWallet.privateKey.substring(2), // remove 0x in pk
-        nonce: updatedNonce + 2
-    }, client)
-  ]
-  const blockNumber = await client.eth.getBlockNumber()
-  console.log("Megabundle target block no: ", blockNumber + 15)
-  const unsignedMegaBundle = {
-    txs: txs,
-    blockNumber: blockNumber + 15,
-    minTimestamp: 0,
-    maxTimestamp: 0,
-    revertingTxHashes: []
-  }
-  const signedMegaBundle = await generateRelaySignature(unsignedMegaBundle, TRUSTED_RELAY_PK)
-  const params = [
-    {
-      txs,
-      blockNumber: blockNumber + 15,
-      minTimestamp: 0,
-      maxTimestamp: 0,
-      revertingTxHashes: [],
-      relaySignature: signedMegaBundle
-    }
-  ]
-  const body = {
-      params,
-      method: 'eth_sendMegabundle',
-      id: '123'
-  }
-  await fetch('http://localhost:8545', {
-      method: 'POST',
-      body: JSON.stringify(body),
-      headers: {
-          'Content-Type': 'application/json'
-      }
-  })
-
-  await awaitBlock(client, blockNumber + 25)
-
-  for (let i = 0; i < 3; ++i) {
-    const receipt = await client.eth.getTransactionReceipt(client.utils.keccak256(txs[i]))
-    if (receipt) {
-      console.log("transaction from a reverting megabundle was inserted")
-      process.exit(1)
-    }
-  }
 }
 
 const checkBundleStatus = async (hash) => {
@@ -312,9 +172,6 @@ const main = async() => {
     console.log("Funding tx mined at block #", fundTxReceipt.blockNumber)
     const testWalletBalance = await client.eth.getBalance(testWallet.address)
     console.log('Balance: ', testWalletBalance)
-
-    await checkRevertingBundles()
-    await checkRevertingMebagundle()
 
     // Now we create a bundle
     const blockNumber = await client.eth.getBlockNumber()
