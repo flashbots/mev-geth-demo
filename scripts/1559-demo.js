@@ -26,40 +26,6 @@ const sample1559TxInput = {
     privateKey: "133be114715e5fe528a1b8adf36792160601a2d63ab59d1fd454275b31328791"
 } */
 
-const checkMegabundleStatus = async (hash) => {
-  var timer = setInterval(async function() {
-    const receipt = await client.eth.getTransactionReceipt(hash)
-    if (receipt) { // If the tx has been mined, it returns null if pending
-      clearInterval(timer) // stop the setInterval once we get a valid receipt
-      const block = receipt.blockNumber
-      // Given the base fee is burnt and priority fee is set to 0, miner balance shouldn't change
-
-      const MinerBalanceBefore = await client.eth.getBalance(FAUCET_ADDRESS, block - 1)
-      const MinerBalanceAfter = await client.eth.getBalance(FAUCET_ADDRESS, block)
-      console.log("Miner before", MinerBalanceBefore.toString())
-      console.log("Miner after", MinerBalanceAfter.toString())
-
-      // balance before/after the block is mined, remove the block reward
-      const minerProfit = new BN(MinerBalanceAfter).sub(new BN(MinerBalanceBefore))
-      const finalProfit = minerProfit.sub(new BN(BLOCK_REWARD.toString())).toString();
-
-      console.log("Profit (ETH)", finalProfit.toString())
-      console.log("Mega bundle Profit equals bribe?", parseInt(finalProfit)==MINER_BRIBE)
-      
-      // 1st tx of our bundle should also be processed and the balance of receiver should increase
-      const balanceBefore = await client.eth.getBalance(DUMMY_RECEIVER, block - 1)
-      const balanceAfter = await client.eth.getBalance(DUMMY_RECEIVER, block)
-      const receiverProfit = new BN(balanceAfter).sub(new BN(balanceBefore)).toString();
-
-      console.log("Receiver before", balanceBefore.toString())
-      console.log("Receiver after", balanceAfter.toString())
-      console.log("Received value?", parseInt(receiverProfit)==RECEIVER_VALUE)
-    } else {
-      console.log("Bundle tx has not been mined yet")
-    }
-  }, 5000);
-}
-
 const checkBundleStatus = async (hash) => {
     var timer = setInterval(async function() {
       const receipt = await client.eth.getTransactionReceipt(hash)
@@ -88,66 +54,7 @@ const checkBundleStatus = async (hash) => {
         console.log("Receiver before", balanceBefore.toString())
         console.log("Receiver after", balanceAfter.toString())
         console.log("Received value?", parseInt(receiverProfit)==RECEIVER_VALUE)
-        
-        // Now we test megabundles
-        const blockNumber = await client.eth.getBlockNumber()
-        console.log("Megabundle target block no: ", blockNumber + 15)
-        const updatedNonce = await client.eth.getTransactionCount(testWallet.address)
-        const txs = [
-          // random tx at bundle index 0
-          await signEIP1559Tx({
-              to: DUMMY_RECEIVER,
-              value: RECEIVER_VALUE, // ETH
-              fromAddress: testWallet.address,
-              data: "0x", // direct send
-              gasLimit: 21000,
-              priorityFee: 0,
-              privateKey: testWallet.privateKey.substring(2), // remove 0x in pk
-              nonce: updatedNonce
-          }, client),
-          // miner bribe
-          await signEIP1559Tx({
-              to: FAUCET_ADDRESS,
-              value: MINER_BRIBE, // ETH
-              fromAddress: testWallet.address,
-              data: "0x", // direct send
-              gasLimit: 21000,
-              priorityFee: 0,
-              privateKey: testWallet.privateKey.substring(2), // remove 0x in pk
-              nonce: updatedNonce + 1
-          }, client)
-        ]
-        const unsignedMegaBundle = {
-          txs: txs,
-          blockNumber: blockNumber + 15,
-          minTimestamp: 0,
-          maxTimestamp: 0,
-          revertingTxHashes: []
-        }
-        const signedMegaBundle = await generateRelaySignature(unsignedMegaBundle, TRUSTED_RELAY_PK)
-        const params = [
-          {
-            txs,
-            blockNumber: blockNumber + 15,
-            minTimestamp: 0,
-            maxTimestamp: 0,
-            revertingTxHashes: [],
-            relaySignature: signedMegaBundle
-          }
-        ]
-        const body = {
-            params,
-            method: 'eth_sendMegabundle',
-            id: '123'
-        }
-        await fetch('http://localhost:8545', {
-            method: 'POST',
-            body: JSON.stringify(body),
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        await checkMegabundleStatus(client.utils.keccak256(txs[1]))
+
       } else{
         console.log("Bundle tx has not been mined yet")
       }

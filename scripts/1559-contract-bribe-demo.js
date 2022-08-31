@@ -56,32 +56,6 @@ const BLOCK_REWARD = 2 * 10 ** 18
 // we use the miner as a faucet for testing
 
 
-const checkMegabundleStatus = async (hash) => {
-  var timer = setInterval(async function() {
-    const receipt = await client.eth.getTransactionReceipt(hash)
-    if(receipt){ // If the tx has been mined, it returns null if pending
-      clearInterval(timer) // stop the setInterval once we get a valid receipt
-      const block = receipt.blockNumber
-      // Given the base fee is burnt and priority fee is set to 0, miner balance shouldn't change
-
-      const MinerBalanceBefore = await client.eth.getBalance(FAUCET_ADDRESS, block - 1)
-      const MinerBalanceAfter = await client.eth.getBalance(FAUCET_ADDRESS, block)
-      console.log("Miner before", MinerBalanceBefore.toString())
-      console.log("Miner after", MinerBalanceAfter.toString())
-
-      // balance before/after the block is mined, remove the block reward
-      const minerProfit = new BN(MinerBalanceAfter).sub(new BN(MinerBalanceBefore))
-      const finalProfit = minerProfit.sub(new BN(BLOCK_REWARD.toString())).toString();
-
-      console.log("Profit (ETH)", finalProfit.toString())
-      console.log("Mega bundle Profit equals bribe?", parseInt(finalProfit)==MINER_BRIBE)
-    } else{
-      console.log("Bundle tx has not been mined yet")
-    }
-  }, 5000);
-}
-
-
 const checkBundleStatus = async (hash, contractAddress) => {
     var timer = setInterval(async function() {
       const receipt = await client.eth.getTransactionReceipt(hash)
@@ -102,52 +76,6 @@ const checkBundleStatus = async (hash, contractAddress) => {
         console.log("Profit (ETH)", finalProfit.toString())
         console.log("Profit equals bribe?", parseInt(finalProfit)==MINER_BRIBE)
                 
-        // Now we test megabundles
-        const blockNumber = await client.eth.getBlockNumber()
-        console.log("Megabundle target block no: ", blockNumber + 15)
-        const updatedNonce = await client.eth.getTransactionCount(testWallet.address)
-        const bribeTxInput = {
-          to: contractAddress,
-          value: MINER_BRIBE,
-          fromAddress: testWallet.address,
-          data: "0x37d0208c", // bribe()
-          gasLimit: 200000,
-          priorityFee: 0,
-          privateKey: testWallet.privateKey.substring(2),
-          nonce: updatedNonce
-        }
-        const txs = [await signEIP1559Tx(bribeTxInput, client)]
-        const unsignedMegaBundle = {
-          txs: txs,
-          blockNumber: blockNumber + 15,
-          minTimestamp: 0,
-          maxTimestamp: 0,
-          revertingTxHashes: []
-        }
-        const signedMegaBundle = await generateRelaySignature(unsignedMegaBundle, TRUSTED_RELAY_PK)
-        const params = [
-          {
-            txs,
-            blockNumber: blockNumber + 15,
-            minTimestamp: 0,
-            maxTimestamp: 0,
-            revertingTxHashes: [],
-            relaySignature: signedMegaBundle
-          }
-        ]
-        const body = {
-            params,
-            method: 'eth_sendMegabundle',
-            id: '123'
-        }
-        const respRaw = await fetch('http://localhost:8545', {
-            method: 'POST',
-            body: JSON.stringify(body),
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        await checkMegabundleStatus(client.utils.keccak256(txs[0]))
       } else{
         console.log("Bundle tx has not been mined yet")
       }
