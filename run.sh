@@ -3,7 +3,7 @@ DATADIR="${DATADIR:-datadir}"
 HTTP_PORT="${HTTP_PORT:-8545}"
 AUTH_PORT="${AUTH_PORT:-8551}"
 
-MINER_ARGS="${MINER_ARGS:---miner.etherbase=0xd912aecb07e9f4e1ea8e6b4779e7fb6aa1c3e4d8 --miner.trustedrelays=0xfb11e78C4DaFec86237c2862441817701fdf197F --mine --miner.threads=2}"
+MINER_ARGS="${MINER_ARGS:---miner.etherbase=0xd912aecb07e9f4e1ea8e6b4779e7fb6aa1c3e4d8 --mine --miner.threads=2}"
 
 rm -rf $DATADIR
 
