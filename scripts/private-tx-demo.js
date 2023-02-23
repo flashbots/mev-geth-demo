@@ -29,7 +29,8 @@ const sendRawTransaction = async(rpc_address, method, tx) => {
     const body = {
       params: [tx],
         method,
-        id: '124'
+        id: '124',
+        jsonrpc: '2.0'
     }
     const respRaw = await fetch(rpc_address, {
         method: 'POST',

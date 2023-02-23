@@ -73,7 +73,8 @@ const checkRevertingMebagundle = async () => {
   const body = {
       params,
       method: 'eth_sendMegabundle',
-      id: '123'
+      id: '123',
+      jsonrpc: '2.0'
   }
   await fetch('http://localhost:8545', {
       method: 'POST',
