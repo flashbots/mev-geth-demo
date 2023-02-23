@@ -56,7 +56,8 @@ const user = ethers.Wallet.createRandom().connect(provider)
     const body = {
       params,
       method: 'eth_sendBundle',
-      id: '123'
+      id: '123',
+      jsonrpc: '2.0'
     }
     const respRaw = await fetch('http://localhost:8545', {
       method: 'POST',

@@ -51,7 +51,8 @@ const checkRevertingBundles = async () => {
   const body = {
       params,
       method: 'eth_sendBundle',
-      id: '123'
+      id: '123',
+      jsonrpc: '2.0'
   }
   await fetch('http://localhost:8545', {
       method: 'POST',
